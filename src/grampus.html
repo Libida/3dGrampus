@@ -12,11 +12,20 @@
 </head>
 <body>
 <div id="container"></div>
-<script src="http://www.html5canvastutorials.com/libraries/three.min.js"></script>
+<script src="js/three.js"></script>
 <script defer="defer">
     // revolutions per second
     var angularSpeed = 0.2;
     var lastTime = 0;
+    var count = 0.1;
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        grampus.moveBody();
+
+    }
 
 
     var grampus = {
@@ -29,28 +38,58 @@
             anatomy: {
                 body: {
                     bodyGeometricObject: {},
-                    circlesCount: 4,
-                    startDiameter: 100,
-                    endDiameter: 400,
-                    diameterDiff: 50
+                    cylinders: {
+                        count: 4,
+                        diameter: {
+                            start: 50,
+                            end: 150,
+                            diff: 25
+                        }
+                    }
                 }
             },
-            position: {
+            mouse: {
                 x: 0,
-                y: 0,
-                z: 0
+                y: 0
             }
         },
 
         init: function () {
             this.initThreeJS();
             this.drawBody();
-            this.mouseMove();
+            this.bindEvents();
+            animate();
         },
 
         bindEvents: function () {
+            var self = this;
+            document.addEventListener( 'mousemove', self.onMouseMove, false );
+        },
+
+        onMouseMove: function (event) {
+            var mouse = grampus.settings.mouse;
+            mouse.x = ( event.clientX - window.innerWidth / 2 );
+            mouse.y =  - ( event.clientY - window.innerHeight / 2 );
+        },
+
+        moveBody: function () {
+            var self = this,
+                body = self.settings.anatomy.body.bodyGeometricObject,
+                bodyCylinders = body.children,
+                coordinates = self.settings.mouse;
+
+            for (var i = 0; i < bodyCylinders.length; i++) {
+                var currentCylinder = bodyCylinders[i],
+                        currentY = coordinates.y + i *50;
+                currentCylinder.position.x = coordinates.x;
+                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10;
+                count += 0.03;
+            }
+            grampus.renderThreeJSResults();
 
         },
+
+
 
         initThreeJS: function () {
             var threeJS = this.settings.threeJS;
@@ -62,41 +101,6 @@
             threeJS.scene = new THREE.Scene();
         },
 
-        mouseMove: function () {
-            var self = this,
-                    coordinates = self.settings.position;
-            $(window).on('click', function (e) {
-                coordinates.x = e.pageX;
-                coordinates.y = e.pageY;
-                self.onDocumentMouseDown();
-//                self.settings.anatomy.body.bodyGeometricObject.position.x = coordinates.x;
-//                self.settings.anatomy.body.bodyGeometricObject.position.y = coordinates.y;
-//                self.renderThreeJSResults();
-
-            });
-        },
-
-        onDocumentMouseDown: function (event) {
-            var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
-            projector.unprojectVector(vector, camera);
-
-            var raycaster = new THREE.Raycaster(this.settings.threeJS.camera.position, vector.sub(this.settings.threeJS.camera.position).normalize());
-
-            var intersects = raycaster.intersectObjects(objects);
-
-            if (intersects.length > 0) {
-                console.log(intersects[ 0 ]);
-alert();
-//                intersects[ 0 ].object.material.color.setHex(Math.random() * 0xffffff);
-//
-//                var particle = new THREE.Particle(particleMaterial);
-//                particle.position = intersects[ 0 ].point;
-//                particle.scale.x = particle.scale.y = 8;
-//                scene.add(particle);
-
-            }
-        },
-
         renderThreeJSResults: function () {
             var threeJS = this.settings.threeJS;
             threeJS.renderer.render(threeJS.scene, threeJS.camera);
@@ -106,18 +110,17 @@ alert();
             var selfSettings = this.settings,
                     scene = selfSettings.threeJS.scene,
                     body = selfSettings.anatomy.body,
-                    currentCircleDiameter = body.startDiameter,
-                    currentX = 0;
+                    currentCircleDiameter = body.cylinders.diameter.start,
+                    diameterDiff = body.cylinders.diameter.diff,
+                    currentZ = 0;
             body.bodyGeometricObject = new THREE.Object3D();
             body.bodyGeometricObject.position.x = 0;
             scene.add(body.bodyGeometricObject);
-            for (var i = 0; i < body.circlesCount; i++) {
-                this.drawBodyCircle(currentCircleDiameter, currentCircleDiameter + body.diameterDiff, currentX);
-                currentCircleDiameter += body.diameterDiff;
-                currentX += 200;
+            for (var i = 0; i < body.cylinders.count; i++) {
+                this.drawBodyCircle(currentCircleDiameter, currentCircleDiameter + diameterDiff, currentZ);
+                currentCircleDiameter += diameterDiff;
+                currentZ += 150;
             }
-            console.log(body.bodyGeometricObject);
-
             this.renderThreeJSResults();
 
         },
@@ -126,29 +129,18 @@ alert();
             var self = this;
             console.log(figure);
             figure.position.x += 50;
-//      var time = (new Date()).getTime();
-//            var timeDiff = time - lastTime;
-//            var angleChange = angularSpeed * timeDiff * 2 * Math.PI / 1000;
-//            figure.rotation.x += angleChange;
-//            lastTime = time;
-
-//            this.renderThreeJSResults();
-
-//            requestAnimationFrame(self.animate());
-
         },
 
-        drawBodyCircle: function (startDiameter, endDiameter, x) {
-            console.log(startDiameter + ", " + endDiameter);
+        drawBodyCircle: function (startDiameter, endDiameter, z) {
             var bodyObject = this.settings.anatomy.body.bodyGeometricObject;
-            var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 20, 50, 50, false), new THREE.MeshBasicMaterial({
+            var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), new THREE.MeshBasicMaterial({
                 wireframe: true,
                 color: 'blue'
             }));
-            this.animate(cylinder);
-            cylinder.position.x = x;
-            cylinder.position.y = 100;
-            cylinder.position.z = 100;
+            cylinder.position.x = 0;
+            cylinder.position.y = 0;
+            cylinder.position.z = z;
+            cylinder.applyMatrix( new THREE.Matrix4().makeRotationX( Math.PI / 2 ) );
             bodyObject.add(cylinder);
         }
     };
