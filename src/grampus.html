@@ -20,11 +20,8 @@
     var count = 0.1;
 
     function animate() {
-
-        requestAnimationFrame( animate );
-
         grampus.moveBody();
-
+        requestAnimationFrame( animate );
     }
 
 
@@ -82,7 +79,7 @@
                 var currentCylinder = bodyCylinders[i],
                         currentY = coordinates.y + i *50;
                 currentCylinder.position.x = coordinates.x;
-                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10;
+                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10 + coordinates.y;
                 count += 0.03;
             }
             grampus.renderThreeJSResults();
@@ -96,7 +93,7 @@
             threeJS.renderer = new THREE.WebGLRenderer();
             threeJS.renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
             document.body.appendChild(threeJS.renderer.domElement);
-            threeJS.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+            threeJS.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000);
             threeJS.camera.position.z = 700;
             threeJS.scene = new THREE.Scene();
         },
@@ -123,12 +120,6 @@
             }
             this.renderThreeJSResults();
 
-        },
-
-        animate: function (figure) {
-            var self = this;
-            console.log(figure);
-            figure.position.x += 50;
         },
 
         drawBodyCircle: function (startDiameter, endDiameter, z) {
