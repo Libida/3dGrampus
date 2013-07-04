@@ -16,7 +16,6 @@
 <script defer="defer">
     // revolutions per second
     var angularSpeed = 0.2;
-    var lastTime = 0;
     var count = 0.1;
 
     function animate() {
@@ -47,7 +46,9 @@
             },
             mouse: {
                 x: 0,
-                y: 0
+                y: 0,
+                xDiff: 0,
+                yDiff: 0
             }
         },
 
@@ -64,9 +65,11 @@
         },
 
         onMouseMove: function (event) {
-            var mouse = grampus.settings.mouse;
+            var mouse = grampus.settings.mouse,
+                    prevY = mouse.y;
             mouse.x = ( event.clientX - window.innerWidth / 2 );
-            mouse.y =  - ( event.clientY - window.innerHeight / 2 );
+            mouse.y =   -( event.clientY - window.innerHeight / 2 );
+            mouse.yDiff = mouse.y - prevY;
         },
 
         moveBody: function () {
@@ -76,10 +79,22 @@
                 coordinates = self.settings.mouse;
 
             for (var i = 0; i < bodyCylinders.length; i++) {
-                var currentCylinder = bodyCylinders[i],
-                        currentY = coordinates.y + i *50;
-                currentCylinder.position.x = coordinates.x;
-                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10 + coordinates.y;
+                var currentCylinder = bodyCylinders[i];
+//                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10 + coordinates.y;
+
+                console.log("y =" + coordinates.y + "; diff = " + coordinates.yDiff);
+
+//                if (coordinates.yDiff >= 0) {
+                    currentCylinder.position.y = coordinates.y/(i+1);
+                    currentCylinder.position.x = coordinates.x/(i+1);
+//                }
+  //              else {
+//                    currentCylinder.position.y = coordinates.y/(bodyCylinders.length - i);
+    //            }
+                if ((bodyCylinders[0].position.y >= window.innerHeight/2) || (bodyCylinders[0].position.y < -window.innerHeight/2)) {
+                    currentCylinder.position.y = coordinates.y;
+                    currentCylinder.position.x = coordinates.x;
+                }
                 count += 0.03;
             }
             grampus.renderThreeJSResults();
