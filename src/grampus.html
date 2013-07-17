@@ -16,7 +16,9 @@
 <script defer="defer">
     // revolutions per second
     var angularSpeed = 0.2;
-    var count = 0.1;
+    var count = 0.1,
+            moveBodyCount = 0.1,
+            ncount = 0.01;
 
     function animate() {
         grampus.moveBody();
@@ -41,7 +43,9 @@
                             end: 150,
                             diff: 25
                         }
-                    }
+                    },
+                    smoothTransitionNeeded: false,
+                    moveBodyToPointFinished: []
                 }
             },
             mouse: {
@@ -56,48 +60,113 @@
             this.initThreeJS();
             this.drawBody();
             this.bindEvents();
-            animate();
         },
 
         bindEvents: function () {
             var self = this;
+            self.animateMoveBody();
             document.addEventListener( 'mousemove', self.onMouseMove, false );
         },
 
         onMouseMove: function (event) {
             var mouse = grampus.settings.mouse,
                     prevY = mouse.y;
-            mouse.x = ( event.clientX - window.innerWidth / 2 );
+            mouse.x = ( event.clientX - window.innerWidth / 2 ) ;
             mouse.y =   -( event.clientY - window.innerHeight / 2 );
             mouse.yDiff = mouse.y - prevY;
+            if ((Math.abs(mouse.yDiff) >= 10) && !grampus.settings.anatomy.body.smoothTransitionNeeded) {
+                grampus.settings.anatomy.body.smoothTransitionNeeded = true;
+                console.log(mouse.yDiff);
+                grampus.animateMoveBodyToPoint();
+            }
+        },
+
+        moveBodyToPoint: function () {
+            var self = this,
+                    body = self.settings.anatomy.body.bodyGeometricObject,
+                    bodyCylinders = body.children,
+                    coordinates = self.settings.mouse;
+            console.log(self.settings.anatomy.body.moveBodyToPointFinished);
+
+            for (var i = 0; i < bodyCylinders.length; i++) {
+                var currentCylinder = bodyCylinders[i];
+//                currentCylinder.position.y = (Math.sin( ( i*2 - count ) * 0.3 ) * 100 + coordinates.y)/(ncount*100);
+                //currentCylinder.position.y = (Math.sin( ( i*2 - count ) * 0.3 ) * 100 + coordinates.y)/(ncount*200);
+                if (Math.floor(currentCylinder.position.y) != Math.floor(coordinates.y)) {
+                    currentCylinder.position.y += (coordinates.y - currentCylinder.position.y) / (ncount*1000);
+                }
+                else {
+                    if ( !( i in self.settings.anatomy.body.moveBodyToPointFinished ) ) {
+                        self.settings.anatomy.body.moveBodyToPointFinished[i] = currentCylinder;
+                    }
+                }
+//                currentCylinder.position.x = coordinates.x;
+                count += 0.03;
+                ncount += 0.00001;
+            }
+
+            console.log(self.settings.anatomy.body.moveBodyToPointFinished.length);
+
+            if (self.settings.anatomy.body.moveBodyToPointFinished.length == self.settings.anatomy.body.cylinders.count) {
+                self.settings.anatomy.body.smoothTransitionNeeded = false;
+                console.log(self.settings.anatomy.body.smoothTransitionNeeded);
+                self.settings.anatomy.body.moveBodyToPointFinished = {};
+                count = 0.1;
+                ncount = 0.1;
+            }
+
+            self.renderThreeJSResults();
+
+        },
+
+        animateMoveBodyToPoint: function() {
+            var self = this;
+            window.requestAnimationFrame(function() {
+                if (self.settings.anatomy.body.smoothTransitionNeeded) {
+                    self.moveBodyToPoint();
+                    self.animateMoveBodyToPoint();
+                }
+            });
+
         },
 
         moveBody: function () {
             var self = this,
                 body = self.settings.anatomy.body.bodyGeometricObject,
-                bodyCylinders = body.children,
-                coordinates = self.settings.mouse;
+                bodyCylinders = body.children;
 
             for (var i = 0; i < bodyCylinders.length; i++) {
                 var currentCylinder = bodyCylinders[i];
-//                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10 + coordinates.y;
+//                currentCylinder.position.y = Math.sin( ( i*2 + count ) * 0.3 ) * 10 + coordinates.y/(i+1);
 
-                console.log("y =" + coordinates.y + "; diff = " + coordinates.yDiff);
 
-//                if (coordinates.yDiff >= 0) {
-                    currentCylinder.position.y = coordinates.y/(i+1);
-                    currentCylinder.position.x = coordinates.x/(i+1);
+//                console.log("y =" + coordinates.y + "; diff = " + coordinates.yDiff);
+
+//                if (Math.abs(coordinates.yDiff) >= 30) {
+                    currentCylinder.position.y = Math.sin( ( i*2 - moveBodyCount ) * 0.3 ) * 100;
 //                }
   //              else {
 //                    currentCylinder.position.y = coordinates.y/(bodyCylinders.length - i);
     //            }
-                if ((bodyCylinders[0].position.y >= window.innerHeight/2) || (bodyCylinders[0].position.y < -window.innerHeight/2)) {
-                    currentCylinder.position.y = coordinates.y;
-                    currentCylinder.position.x = coordinates.x;
-                }
-                count += 0.03;
+//                if ((bodyCylinders[0].position.y >= window.innerHeight/2) || (bodyCylinders[0].position.y < -window.innerHeight/2)) {
+//                    currentCylinder.position.y = coordinates.y;
+//                    currentCylinder.position.x = coordinates.x;
+//                }
+                moveBodyCount += 0.03;
             }
             grampus.renderThreeJSResults();
+
+        },
+
+        animateMoveBody: function() {
+            var self = this;
+            window.requestAnimationFrame(function() {
+                console.log(self.settings.anatomy.body.smoothTransitionNeeded);
+                if (!self.settings.anatomy.body.smoothTransitionNeeded) {
+                    self.moveBody();
+                }
+                self.animateMoveBody();
+            });
 
         },
 
