@@ -18,7 +18,10 @@
     var angularSpeed = 0.2;
     var count = 0.1,
             moveBodyCount = 0.1,
-            ncount = 0.01;
+            moveBodyToPointCoun,
+            MBTP_START = 0.01,
+            mvdp = MBTP_START,
+            ncount = MBTP_START;
 
     function animate() {
         grampus.moveBody();
@@ -76,8 +79,6 @@
             mouse.yDiff = mouse.y - prevY;
             if ((Math.abs(mouse.yDiff) >= 10) && !grampus.settings.anatomy.body.smoothTransitionNeeded) {
                 grampus.settings.anatomy.body.smoothTransitionNeeded = true;
-                console.log(mouse.yDiff);
-                grampus.animateMoveBodyToPoint();
             }
         },
 
@@ -86,47 +87,37 @@
                     body = self.settings.anatomy.body.bodyGeometricObject,
                     bodyCylinders = body.children,
                     coordinates = self.settings.mouse;
-            console.log(self.settings.anatomy.body.moveBodyToPointFinished);
 
-            for (var i = 0; i < bodyCylinders.length; i++) {
-                var currentCylinder = bodyCylinders[i];
+            for (var i = 1; i <= bodyCylinders.length; i++) {
+                var currentCylinder = bodyCylinders[i-1];
 //                currentCylinder.position.y = (Math.sin( ( i*2 - count ) * 0.3 ) * 100 + coordinates.y)/(ncount*100);
                 //currentCylinder.position.y = (Math.sin( ( i*2 - count ) * 0.3 ) * 100 + coordinates.y)/(ncount*200);
-                if (Math.floor(currentCylinder.position.y) != Math.floor(coordinates.y)) {
-                    currentCylinder.position.y += (coordinates.y - currentCylinder.position.y) / (ncount*1000);
-                }
-                else {
-                    if ( !( i in self.settings.anatomy.body.moveBodyToPointFinished ) ) {
-                        self.settings.anatomy.body.moveBodyToPointFinished[i] = currentCylinder;
-                    }
-                }
+                //if (Math.floor(currentCylinder.position.y) != Math.floor(coordinates.y)) {
+                    currentCylinder.position.y += (coordinates.y - currentCylinder.position.y) / (i * 3);
+                    currentCylinder.position.x += (coordinates.x - currentCylinder.position.x) / (i * 3);
+//                    currentCylinder.position.y += Math.sin( ( i*2 - mvdp ) * 0.3 ) * 100;
+                //}
+//                else {
+//                    if ( !( i in self.settings.anatomy.body.moveBodyToPointFinished ) ) {
+//                        self.settings.anatomy.body.moveBodyToPointFinished[i] = currentCylinder;
+//                        alert(i);
+//                    }
+//                }
 //                currentCylinder.position.x = coordinates.x;
-                count += 0.03;
-                ncount += 0.00001;
+                //count += 0.03;
+                mvdp += 0.03;
             }
 
             console.log(self.settings.anatomy.body.moveBodyToPointFinished.length);
 
             if (self.settings.anatomy.body.moveBodyToPointFinished.length == self.settings.anatomy.body.cylinders.count) {
                 self.settings.anatomy.body.smoothTransitionNeeded = false;
-                console.log(self.settings.anatomy.body.smoothTransitionNeeded);
                 self.settings.anatomy.body.moveBodyToPointFinished = {};
                 count = 0.1;
-                ncount = 0.1;
+                mvdp = MBTP_START;
             }
 
             self.renderThreeJSResults();
-
-        },
-
-        animateMoveBodyToPoint: function() {
-            var self = this;
-            window.requestAnimationFrame(function() {
-                if (self.settings.anatomy.body.smoothTransitionNeeded) {
-                    self.moveBodyToPoint();
-                    self.animateMoveBodyToPoint();
-                }
-            });
 
         },
 
@@ -163,7 +154,10 @@
             window.requestAnimationFrame(function() {
                 console.log(self.settings.anatomy.body.smoothTransitionNeeded);
                 if (!self.settings.anatomy.body.smoothTransitionNeeded) {
-                    self.moveBody();
+                    //self.moveBody();
+                }
+                else {
+                    self.moveBodyToPoint();
                 }
                 self.animateMoveBody();
             });
