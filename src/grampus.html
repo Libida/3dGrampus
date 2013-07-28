@@ -25,16 +25,15 @@
                 body: {
                     bodyGeometricObject: {},
                     cylinders: {
-                        count: 13,
+                        count: 7,
                         diameter: {
-                            start: 25,
-                            diff: 25
-                        },
-                        zDiff: 200
+                            start: 5,
+                            diff: 20
+                        }
                     }
                 },
                 tail: {
-
+                    tailGeometricObject: {}
                 }
             },
             mouse: {
@@ -113,32 +112,73 @@
             scene.add(body.bodyGeometricObject);
             var middleCylinderIndex = body.cylinders.count/2;
             for (var i = 0; i < middleCylinderIndex; i++) {
-                this.drawBodyCircle(currentCircleDiameter, currentCircleDiameter + diameterDiff, currentZ);
+                this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter + diameterDiff, 0, 0, 0);
                 currentCircleDiameter += diameterDiff;
-                currentZ += body.cylinders.zDiff;
             }
+            var secondPartDiameterDiff = diameterDiff / 1.3;
             for (var j = middleCylinderIndex; j < body.cylinders.count; j++) {
-                this.drawBodyCircle(currentCircleDiameter, currentCircleDiameter - diameterDiff, currentZ);
-                currentCircleDiameter -= diameterDiff;
-                currentZ += body.cylinders.zDiff;
+                this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter - secondPartDiameterDiff, 0, 0, 0);
+                currentCircleDiameter -= secondPartDiameterDiff;
             }
+            this.drawTail(currentCircleDiameter, currentZ);
             this.renderThreeJSResults();
 
         },
 
-        drawBodyCircle: function (startDiameter, endDiameter, z) {
-            var bodyObject = this.settings.anatomy.body.bodyGeometricObject;
-            var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), new THREE.MeshBasicMaterial({
-                wireframe: true,
-                color: 'blue'
-            }));
-            cylinder.position.x = 0;
-            cylinder.position.y = 0;
-            cylinder.position.z = z;
+        drawBodyCircle: function (bodyPart, startDiameter, endDiameter, x, y, z) {
+            var material = new THREE.MeshLambertMaterial({
+                map: THREE.ImageUtils.loadTexture('img/crate.jpg')
+            });
+
+            var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), material);
+
             cylinder.applyMatrix( new THREE.Matrix4().makeRotationX( Math.PI / 2 ) );
-            bodyObject.add(cylinder);
+//            bodyPart.add(cylinder);
+            this.settings.anatomy.body.bodyGeometricObject.add(cylinder);
+
+            cylinder.position.x = x;
+            cylinder.position.y = y;
+            cylinder.position.z = z;
+        },
+
+        drawTail: function (currentCircleDiameter, currentZ) {
+            var self = this,
+                selfSettings = self.settings,
+                scene = selfSettings.threeJS.scene,
+                tail = selfSettings.anatomy.tail;
+
+            tail.tailGeometricObject = new THREE.Object3D();
+            var tailCurrentY = 0;
+
+            while (currentCircleDiameter > 0) {
+                this.drawBodyCircle(tail.tailGeometricObject, currentCircleDiameter, currentCircleDiameter, 0, tailCurrentY - currentCircleDiameter/2, 0);
+                currentCircleDiameter -= 5;
+                tailCurrentY -= currentCircleDiameter/2;
+            }
+
+            var geometry = new THREE.Geometry();
+            var v1 = new THREE.Vector3(0,0,0);   // Vector3 used to specify position
+            var v2 = new THREE.Vector3(300,0,0);
+            var v3 = new THREE.Vector3(0,300,0);   // 2d = all vertices in the same plane.. z = 0
+            geometry.vertices.push(v1);
+            geometry.vertices.push(v2);
+            geometry.vertices.push(v3);
+
+            geometry.faces.push(new THREE.Face3(0, 2, 1));
+
+            var redMat = new THREE.MeshBasicMaterial({color: 0xff0000});
+            var triangle = new THREE.Mesh(geometry, redMat);
+
+            //selfSettings.anatomy.body.bodyGeometricObject.add(tail.tailGeometricObject);
+//            selfSettings.anatomy.body.bodyGeometricObject.add(triangle);
+            scene.add(triangle);
+//            selfSettings.anatomy.body.bodyGeometricObject.add(v1);
+//            selfSettings.anatomy.body.bodyGeometricObject.add(v2);
+//            selfSettings.anatomy.body.bodyGeometricObject.add(v3);
+//            tail.tailGeometricObject.position.y = -300;
         }
     };
+
 
     grampus.init();
 </script>
