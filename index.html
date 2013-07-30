@@ -141,7 +141,7 @@
 
         drawBodyCircle: function (bodyPart, startDiameter, endDiameter) {
             var material = new THREE.MeshLambertMaterial({
-                map: THREE.ImageUtils.loadTexture('http://www.html5canvastutorials.com/demos/assets/crate.jpg')
+                map: THREE.ImageUtils.loadTexture('images/crate.jpg')
             });
             var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), material);
             cylinder.applyMatrix( new THREE.Matrix4().makeRotationX( Math.PI / 2 ) );
