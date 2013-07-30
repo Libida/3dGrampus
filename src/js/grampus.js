@@ -110,7 +110,7 @@ var grampus = {
     },
 
     drawBodyCircle: function (bodyPart, startDiameter, endDiameter, x, y, z) {
-        var material = new THREE.MeshLambertMaterial({
+        var material = new THREE.MeshBasicMaterial({
             map: THREE.ImageUtils.loadTexture('img/crate.jpg')
         });
 
