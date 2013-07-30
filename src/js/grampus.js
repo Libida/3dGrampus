@@ -9,7 +9,7 @@ var grampus = {
             body: {
                 bodyGeometricObject: {},
                 cylinders: {
-                    count: 7,
+                    count: 11,
                     diameter: {
                         start: 5,
                         diff: 20
@@ -23,8 +23,8 @@ var grampus = {
         mouse: {
             x: 0,
             y: 0,
-            xDiff: 0,
-            yDiff: 0
+            timeDelay: 10,
+            timeDelayFlag: 0
         }
     },
 
@@ -35,17 +35,41 @@ var grampus = {
     },
 
     bindEvents: function () {
-        var self = this;
-        self.animateMoveBody();
-        document.addEventListener( 'mousemove', self.onMouseMove, false );
+        this.animateMoveBody();
+        this.bindMouse();
+    },
+
+    initThreeJS: function () {
+        var threeJS = this.settings.threeJS;
+        threeJS.renderer = new THREE.WebGLRenderer();
+        threeJS.renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
+        document.body.appendChild(threeJS.renderer.domElement);
+        threeJS.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000);
+        threeJS.camera.position.z = 700;
+        threeJS.scene = new THREE.Scene();
+    },
+
+
+    renderThreeJSResults: function () {
+        var threeJS = this.settings.threeJS;
+        threeJS.renderer.render(threeJS.scene, threeJS.camera);
+    },
+
+    bindMouse: function () {
+        var self = this,
+            mouse = self.settings.mouse;
+        document.addEventListener( 'mousemove',
+            function(ev) {
+                if (mouse.timeDelayFlag) clearTimeout(mouse.timeDelayFlag);
+                mouse.timeDelayFlag = setTimeout(function() {self.onMouseMove(ev);}, mouse.timeDelay);
+            }
+            , false );
     },
 
     onMouseMove: function (event) {
-        var mouse = grampus.settings.mouse,
-            prevY = mouse.y;
+        var mouse = this.settings.mouse;
         mouse.x = ( event.clientX - window.innerWidth / 2 ) ;
         mouse.y =   -( event.clientY - window.innerHeight / 2 );
-        mouse.yDiff = mouse.y - prevY;
     },
 
     moveBodyToPoint: function () {
@@ -69,21 +93,6 @@ var grampus = {
         });
     },
 
-    initThreeJS: function () {
-        var threeJS = this.settings.threeJS;
-        threeJS.renderer = new THREE.WebGLRenderer();
-        threeJS.renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
-        document.body.appendChild(threeJS.renderer.domElement);
-        threeJS.camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 1000);
-        threeJS.camera.position.z = 700;
-        threeJS.scene = new THREE.Scene();
-    },
-
-    renderThreeJSResults: function () {
-        var threeJS = this.settings.threeJS;
-        threeJS.renderer.render(threeJS.scene, threeJS.camera);
-    },
-
     drawBody: function () {
         var selfSettings = this.settings,
             scene = selfSettings.threeJS.scene,
@@ -96,12 +105,12 @@ var grampus = {
         scene.add(body.bodyGeometricObject);
         var middleCylinderIndex = body.cylinders.count/2;
         for (var i = 0; i < middleCylinderIndex; i++) {
-            this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter + diameterDiff, 0, 0, 0);
+            this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter + diameterDiff);
             currentCircleDiameter += diameterDiff;
         }
         var secondPartDiameterDiff = diameterDiff / 1.3;
         for (var j = middleCylinderIndex; j < body.cylinders.count; j++) {
-            this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter - secondPartDiameterDiff, 0, 0, 0);
+            this.drawBodyCircle(body.bodyGeometricObject, currentCircleDiameter, currentCircleDiameter - secondPartDiameterDiff);
             currentCircleDiameter -= secondPartDiameterDiff;
         }
         this.drawTail(currentCircleDiameter, currentZ);
@@ -109,20 +118,14 @@ var grampus = {
 
     },
 
-    drawBodyCircle: function (bodyPart, startDiameter, endDiameter, x, y, z) {
-        var material = new THREE.MeshBasicMaterial({
-            map: THREE.ImageUtils.loadTexture('img/crate.jpg')
-        });
-
-        var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), material);
+    drawBodyCircle: function (bodyPart, startDiameter, endDiameter) {
+        var cylinder = new THREE.Mesh(new THREE.CylinderGeometry(startDiameter, endDiameter, 100, 50, 50, false), new THREE.MeshBasicMaterial({
+            wireframe: true,
+            color: 'black'
+        }));
 
         cylinder.applyMatrix( new THREE.Matrix4().makeRotationX( Math.PI / 2 ) );
-//            bodyPart.add(cylinder);
         this.settings.anatomy.body.bodyGeometricObject.add(cylinder);
-
-        cylinder.position.x = x;
-        cylinder.position.y = y;
-        cylinder.position.z = z;
     },
 
     drawTail: function (currentCircleDiameter, currentZ) {
@@ -132,36 +135,12 @@ var grampus = {
             tail = selfSettings.anatomy.tail;
 
         tail.tailGeometricObject = new THREE.Object3D();
-        var tailCurrentY = 0;
 
         while (currentCircleDiameter > 0) {
-            this.drawBodyCircle(tail.tailGeometricObject, currentCircleDiameter, currentCircleDiameter, 0, tailCurrentY - currentCircleDiameter/2, 0);
+            this.drawBodyCircle(tail.tailGeometricObject, currentCircleDiameter, currentCircleDiameter);
             currentCircleDiameter -= 5;
-            tailCurrentY -= currentCircleDiameter/2;
         }
-
-        var geometry = new THREE.Geometry();
-        var v1 = new THREE.Vector3(0,0,0);   // Vector3 used to specify position
-        var v2 = new THREE.Vector3(300,0,0);
-        var v3 = new THREE.Vector3(0,300,0);   // 2d = all vertices in the same plane.. z = 0
-        geometry.vertices.push(v1);
-        geometry.vertices.push(v2);
-        geometry.vertices.push(v3);
-
-        geometry.faces.push(new THREE.Face3(0, 2, 1));
-
-        var redMat = new THREE.MeshBasicMaterial({color: 0xff0000});
-        var triangle = new THREE.Mesh(geometry, redMat);
-
-        //selfSettings.anatomy.body.bodyGeometricObject.add(tail.tailGeometricObject);
-//            selfSettings.anatomy.body.bodyGeometricObject.add(triangle);
-        scene.add(triangle);
-//            selfSettings.anatomy.body.bodyGeometricObject.add(v1);
-//            selfSettings.anatomy.body.bodyGeometricObject.add(v2);
-//            selfSettings.anatomy.body.bodyGeometricObject.add(v3);
-//            tail.tailGeometricObject.position.y = -300;
     }
 };
-
 
 grampus.init();
